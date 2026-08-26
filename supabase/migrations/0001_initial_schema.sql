@@ -8,7 +8,7 @@ create table public.villages (
   created_at timestamptz not null default now()
 );
 
-create table public.profiles (
+create table public.village_profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   village_id uuid not null references public.villages(id) on delete cascade,
   full_name text not null check (char_length(full_name) between 2 and 100),
@@ -19,7 +19,7 @@ create table public.profiles (
 create table public.announcements (
   id uuid primary key default gen_random_uuid(),
   village_id uuid not null references public.villages(id) on delete cascade,
-  created_by uuid not null references public.profiles(id) on delete cascade,
+  created_by uuid not null references public.village_profiles(id) on delete cascade,
   title text not null check (char_length(title) between 2 and 140),
   body text not null check (char_length(body) between 2 and 2000),
   type text not null default 'Genel',
@@ -29,7 +29,7 @@ create table public.announcements (
 create table public.requests (
   id uuid primary key default gen_random_uuid(),
   village_id uuid not null references public.villages(id) on delete cascade,
-  created_by uuid not null references public.profiles(id) on delete cascade,
+  created_by uuid not null references public.village_profiles(id) on delete cascade,
   title text not null check (char_length(title) between 2 and 140),
   description text not null default '' check (char_length(description) <= 2000),
   category text not null default 'Diğer',
@@ -40,7 +40,7 @@ create table public.requests (
 
 create index announcements_village_created_idx on public.announcements(village_id, created_at desc);
 create index requests_village_created_idx on public.requests(village_id, created_at desc);
-create index profiles_village_idx on public.profiles(village_id);
+create index village_profiles_village_idx on public.village_profiles(village_id);
 
 create or replace function public.current_village_id()
 returns uuid
@@ -49,7 +49,7 @@ stable
 security definer
 set search_path = ''
 as $$
-  select village_id from public.profiles where id = auth.uid()
+  select village_id from public.village_profiles where id = auth.uid()
 $$;
 
 create or replace function public.is_current_mukhtar()
@@ -59,7 +59,7 @@ stable
 security definer
 set search_path = ''
 as $$
-  select coalesce((select role = 'mukhtar' from public.profiles where id = auth.uid()), false)
+  select coalesce((select role = 'mukhtar' from public.village_profiles where id = auth.uid()), false)
 $$;
 
 create or replace function public.generate_join_code()
@@ -108,7 +108,7 @@ begin
     end if;
   end if;
 
-  insert into public.profiles(id, village_id, full_name, role)
+  insert into public.village_profiles(id, village_id, full_name, role)
   values (new.id, target_village_id, trim(coalesce(new.raw_user_meta_data ->> 'full_name', 'Kullanıcı')), requested_role);
   return new;
 end;
@@ -162,7 +162,7 @@ as $$
     'village_name', v.name,
     'join_code', case when p.role = 'mukhtar' then v.join_code else '' end
   )
-  from public.profiles p
+  from public.village_profiles p
   join public.villages v on v.id = p.village_id
   where p.id = auth.uid()
 $$;
@@ -175,21 +175,21 @@ security definer
 set search_path = ''
 as $$
   select p.id, p.full_name, p.role, p.created_at
-  from public.profiles p
+  from public.village_profiles p
   where p.village_id = public.current_village_id()
     and public.is_current_mukhtar()
   order by p.role, p.full_name
 $$;
 
 alter table public.villages enable row level security;
-alter table public.profiles enable row level security;
+alter table public.village_profiles enable row level security;
 alter table public.announcements enable row level security;
 alter table public.requests enable row level security;
 
 create policy "village members read village" on public.villages
   for select to authenticated using (id = public.current_village_id());
 
-create policy "members read profiles in own village" on public.profiles
+create policy "members read profiles in own village" on public.village_profiles
   for select to authenticated using (village_id = public.current_village_id());
 
 create policy "members read announcements" on public.announcements
@@ -216,8 +216,8 @@ create policy "mukhtar updates requests" on public.requests
   for update to authenticated using (village_id = public.current_village_id() and public.is_current_mukhtar())
   with check (village_id = public.current_village_id() and public.is_current_mukhtar());
 
-revoke all on table public.villages, public.profiles, public.announcements, public.requests from anon, authenticated;
-grant select on table public.villages, public.profiles, public.announcements, public.requests to authenticated;
+revoke all on table public.villages, public.village_profiles, public.announcements, public.requests from anon, authenticated;
+grant select on table public.villages, public.village_profiles, public.announcements, public.requests to authenticated;
 grant insert on table public.announcements, public.requests to authenticated;
 grant update, delete on table public.announcements to authenticated;
 grant update(status) on table public.requests to authenticated;

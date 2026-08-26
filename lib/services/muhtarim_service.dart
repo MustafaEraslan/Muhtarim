@@ -39,7 +39,7 @@ class MuhtarimService {
   Future<List<VillageRequest>> requests() async {
     final rows = await _client
         .from('requests')
-        .select('*, profiles!requests_created_by_fkey(full_name)')
+        .select('*, village_profiles!requests_created_by_fkey(full_name)')
         .order('created_at', ascending: false);
     return (rows as List)
         .map(
