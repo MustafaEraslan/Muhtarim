@@ -8,7 +8,7 @@ class MuhtarimService {
   SupabaseClient get _client => Supabase.instance.client;
 
   Future<AppUser> currentUser() async {
-    final data = await _client.rpc('current_app_user');
+    final data = await _client.rpc('muhtarim_current_app_user');
     return AppUser.fromJson(Map<String, dynamic>.from(data as Map));
   }
 
@@ -66,7 +66,7 @@ class MuhtarimService {
   }
 
   Future<List<Map<String, dynamic>>> members() async {
-    final rows = await _client.rpc('village_members_for_current_user');
+    final rows = await _client.rpc('muhtarim_village_members_for_current_user');
     return (rows as List)
         .map((row) => Map<String, dynamic>.from(row as Map))
         .toList();

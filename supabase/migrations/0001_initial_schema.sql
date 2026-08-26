@@ -42,7 +42,7 @@ create index announcements_village_created_idx on public.announcements(village_i
 create index requests_village_created_idx on public.requests(village_id, created_at desc);
 create index village_profiles_village_idx on public.village_profiles(village_id);
 
-create or replace function public.current_village_id()
+create or replace function public.muhtarim_current_village_id()
 returns uuid
 language sql
 stable
@@ -52,7 +52,7 @@ as $$
   select village_id from public.village_profiles where id = auth.uid()
 $$;
 
-create or replace function public.is_current_mukhtar()
+create or replace function public.muhtarim_is_current_mukhtar()
 returns boolean
 language sql
 stable
@@ -62,7 +62,7 @@ as $$
   select coalesce((select role = 'mukhtar' from public.village_profiles where id = auth.uid()), false)
 $$;
 
-create or replace function public.generate_join_code()
+create or replace function public.muhtarim_generate_join_code()
 returns text
 language plpgsql
 volatile
@@ -80,7 +80,7 @@ begin
 end;
 $$;
 
-create or replace function public.handle_new_user()
+create or replace function public.muhtarim_handle_new_user()
 returns trigger
 language plpgsql
 security definer
@@ -97,7 +97,7 @@ begin
     end if;
 
     insert into public.villages(name, join_code, created_by)
-    values (trim(new.raw_user_meta_data ->> 'village_name'), public.generate_join_code(), new.id)
+    values (trim(new.raw_user_meta_data ->> 'village_name'), public.muhtarim_generate_join_code(), new.id)
     returning id into target_village_id;
   else
     requested_role := 'villager';
@@ -114,29 +114,29 @@ begin
 end;
 $$;
 
-create trigger on_auth_user_created
+create trigger muhtarim_on_auth_user_created
   after insert on auth.users
-  for each row execute procedure public.handle_new_user();
+  for each row execute procedure public.muhtarim_handle_new_user();
 
-create or replace function public.fill_record_scope()
+create or replace function public.muhtarim_fill_record_scope()
 returns trigger
 language plpgsql
 security invoker
 set search_path = ''
 as $$
 begin
-  new.village_id := public.current_village_id();
+  new.village_id := public.muhtarim_current_village_id();
   new.created_by := auth.uid();
   return new;
 end;
 $$;
 
-create trigger announcements_fill_scope before insert on public.announcements
-  for each row execute procedure public.fill_record_scope();
-create trigger requests_fill_scope before insert on public.requests
-  for each row execute procedure public.fill_record_scope();
+create trigger muhtarim_announcements_fill_scope before insert on public.announcements
+  for each row execute procedure public.muhtarim_fill_record_scope();
+create trigger muhtarim_requests_fill_scope before insert on public.requests
+  for each row execute procedure public.muhtarim_fill_record_scope();
 
-create or replace function public.touch_updated_at()
+create or replace function public.muhtarim_touch_updated_at()
 returns trigger language plpgsql set search_path = '' as $$
 begin
   new.updated_at := now();
@@ -144,10 +144,10 @@ begin
 end;
 $$;
 
-create trigger requests_touch_updated_at before update on public.requests
-  for each row execute procedure public.touch_updated_at();
+create trigger muhtarim_requests_touch_updated_at before update on public.requests
+  for each row execute procedure public.muhtarim_touch_updated_at();
 
-create or replace function public.current_app_user()
+create or replace function public.muhtarim_current_app_user()
 returns jsonb
 language sql
 stable
@@ -167,7 +167,7 @@ as $$
   where p.id = auth.uid()
 $$;
 
-create or replace function public.village_members_for_current_user()
+create or replace function public.muhtarim_village_members_for_current_user()
 returns table(id uuid, full_name text, role text, created_at timestamptz)
 language sql
 stable
@@ -176,8 +176,8 @@ set search_path = ''
 as $$
   select p.id, p.full_name, p.role, p.created_at
   from public.village_profiles p
-  where p.village_id = public.current_village_id()
-    and public.is_current_mukhtar()
+  where p.village_id = public.muhtarim_current_village_id()
+    and public.muhtarim_is_current_mukhtar()
   order by p.role, p.full_name
 $$;
 
@@ -187,34 +187,34 @@ alter table public.announcements enable row level security;
 alter table public.requests enable row level security;
 
 create policy "village members read village" on public.villages
-  for select to authenticated using (id = public.current_village_id());
+  for select to authenticated using (id = public.muhtarim_current_village_id());
 
 create policy "members read profiles in own village" on public.village_profiles
-  for select to authenticated using (village_id = public.current_village_id());
+  for select to authenticated using (village_id = public.muhtarim_current_village_id());
 
 create policy "members read announcements" on public.announcements
-  for select to authenticated using (village_id = public.current_village_id());
+  for select to authenticated using (village_id = public.muhtarim_current_village_id());
 create policy "mukhtar creates announcements" on public.announcements
-  for insert to authenticated with check (village_id = public.current_village_id() and created_by = auth.uid() and public.is_current_mukhtar());
+  for insert to authenticated with check (village_id = public.muhtarim_current_village_id() and created_by = auth.uid() and public.muhtarim_is_current_mukhtar());
 create policy "mukhtar updates announcements" on public.announcements
-  for update to authenticated using (village_id = public.current_village_id() and public.is_current_mukhtar());
+  for update to authenticated using (village_id = public.muhtarim_current_village_id() and public.muhtarim_is_current_mukhtar());
 create policy "mukhtar deletes announcements" on public.announcements
-  for delete to authenticated using (village_id = public.current_village_id() and public.is_current_mukhtar());
+  for delete to authenticated using (village_id = public.muhtarim_current_village_id() and public.muhtarim_is_current_mukhtar());
 
 create policy "users read allowed requests" on public.requests
   for select to authenticated using (
-    village_id = public.current_village_id()
-    and (created_by = auth.uid() or public.is_current_mukhtar())
+    village_id = public.muhtarim_current_village_id()
+    and (created_by = auth.uid() or public.muhtarim_is_current_mukhtar())
   );
 create policy "villagers create requests" on public.requests
   for insert to authenticated with check (
-    village_id = public.current_village_id()
+    village_id = public.muhtarim_current_village_id()
     and created_by = auth.uid()
-    and not public.is_current_mukhtar()
+    and not public.muhtarim_is_current_mukhtar()
   );
 create policy "mukhtar updates requests" on public.requests
-  for update to authenticated using (village_id = public.current_village_id() and public.is_current_mukhtar())
-  with check (village_id = public.current_village_id() and public.is_current_mukhtar());
+  for update to authenticated using (village_id = public.muhtarim_current_village_id() and public.muhtarim_is_current_mukhtar())
+  with check (village_id = public.muhtarim_current_village_id() and public.muhtarim_is_current_mukhtar());
 
 revoke all on table public.villages, public.village_profiles, public.announcements, public.requests from anon, authenticated;
 grant select on table public.villages, public.village_profiles, public.announcements, public.requests to authenticated;
@@ -222,10 +222,10 @@ grant insert on table public.announcements, public.requests to authenticated;
 grant update, delete on table public.announcements to authenticated;
 grant update(status) on table public.requests to authenticated;
 
-revoke all on function public.current_app_user() from public;
-revoke all on function public.village_members_for_current_user() from public;
-grant execute on function public.current_app_user() to authenticated;
-grant execute on function public.village_members_for_current_user() to authenticated;
+revoke all on function public.muhtarim_current_app_user() from public;
+revoke all on function public.muhtarim_village_members_for_current_user() from public;
+grant execute on function public.muhtarim_current_app_user() to authenticated;
+grant execute on function public.muhtarim_village_members_for_current_user() to authenticated;
 
 alter publication supabase_realtime add table public.announcements;
 alter publication supabase_realtime add table public.requests;
