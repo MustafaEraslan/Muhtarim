@@ -25,8 +25,7 @@ class VillageRequest {
     status: json['status'] as String? ?? 'open',
     createdAt: DateTime.parse(json['created_at'] as String),
     ownerName:
-        (json['village_profiles'] as Map<String, dynamic>?)?['full_name']
-            as String? ??
+        (json['owner'] as Map<String, dynamic>?)?['full_name'] as String? ??
         'Köy sakini',
   );
 }

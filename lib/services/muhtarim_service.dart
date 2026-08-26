@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../core/config.dart';
 import '../models/announcement.dart';
 import '../models/app_user.dart';
 import '../models/village_request.dart';
@@ -8,7 +9,10 @@ class MuhtarimService {
   SupabaseClient get _client => Supabase.instance.client;
 
   Future<AppUser> currentUser() async {
-    final data = await _client.rpc('muhtarim_current_app_user');
+    final data = await _client.rpc(
+      'muhtarim_current_app_user',
+      params: {'p_app_id': AppConfig.appId},
+    );
     return AppUser.fromJson(Map<String, dynamic>.from(data as Map));
   }
 
@@ -16,6 +20,7 @@ class MuhtarimService {
     final rows = await _client
         .from('announcements')
         .select()
+        .eq('app_id', AppConfig.appId)
         .order('created_at', ascending: false);
     return (rows as List)
         .map(
@@ -30,6 +35,7 @@ class MuhtarimService {
     required String type,
   }) async {
     await _client.from('announcements').insert({
+      'app_id': AppConfig.appId,
       'title': title,
       'body': body,
       'type': type,
@@ -39,7 +45,10 @@ class MuhtarimService {
   Future<List<VillageRequest>> requests() async {
     final rows = await _client
         .from('requests')
-        .select('*, village_profiles!requests_created_by_fkey(full_name)')
+        .select(
+          '*, owner:village_profiles!requests_app_creator_fkey(full_name)',
+        )
+        .eq('app_id', AppConfig.appId)
         .order('created_at', ascending: false);
     return (rows as List)
         .map(
@@ -55,6 +64,7 @@ class MuhtarimService {
     required String category,
   }) async {
     await _client.from('requests').insert({
+      'app_id': AppConfig.appId,
       'title': title,
       'description': description,
       'category': category,
@@ -62,11 +72,18 @@ class MuhtarimService {
   }
 
   Future<void> updateRequestStatus(String id, String status) async {
-    await _client.from('requests').update({'status': status}).eq('id', id);
+    await _client
+        .from('requests')
+        .update({'status': status})
+        .eq('app_id', AppConfig.appId)
+        .eq('id', id);
   }
 
   Future<List<Map<String, dynamic>>> members() async {
-    final rows = await _client.rpc('muhtarim_village_members_for_current_user');
+    final rows = await _client.rpc(
+      'muhtarim_village_members_for_current_user',
+      params: {'p_app_id': AppConfig.appId},
+    );
     return (rows as List)
         .map((row) => Map<String, dynamic>.from(row as Map))
         .toList();

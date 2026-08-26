@@ -16,6 +16,7 @@ Muhtar ile köy halkını tek bir dijital köy meydanında buluşturan Flutter u
 
 1. Supabase Dashboard'da boş bir proje oluşturun.
 2. SQL Editor'ü açıp `supabase/migrations/0001_initial_schema.sql` dosyasının tamamını çalıştırın.
+   Ardından `0002_multi_app_architecture.sql` migration'ını çalıştırın.
 3. Project Settings > API bölümündeki Project URL ve `anon` public key değerlerini alın.
 4. Uygulamayı aşağıdaki gibi başlatın:
 
@@ -35,6 +36,22 @@ flutter build appbundle \
 ```
 
 `anon` key mobil uygulamada kullanılmak üzere tasarlanmıştır; `service_role` anahtarını hiçbir zaman uygulamaya eklemeyin.
+
+## Çoklu uygulama mimarisi
+
+Bu Supabase projesi birden fazla mobil uygulama tarafından paylaşılabilir. `apps`
+tablosu uygulama kayıtlarını, `app_memberships` ise bir Auth kullanıcısının hangi
+uygulamalara üye olduğunu tutar. Her uygulama kendi sabit UUID değerini kullanır.
+
+Muhtarım uygulama kimliği:
+
+```text
+44ec1e7b-9def-47c8-beaf-2c11d1807d14
+```
+
+Muhtarım tablolarındaki bütün kayıtlar `app_id` taşır ve RLS politikaları bu alanı
+üyelikle birlikte doğrular. Yeni bir uygulama ekleme adımları
+`docs/MULTI_APP_SUPABASE.md` dosyasındadır.
 
 ## İlk kullanım
 

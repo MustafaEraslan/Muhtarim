@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../core/config.dart';
+
 class AuthPage extends StatefulWidget {
   const AuthPage({super.key});
 
@@ -37,6 +39,7 @@ class _AuthPageState extends State<AuthPage> {
           email: _email.text.trim(),
           password: _password.text,
           data: {
+            'app_id': AppConfig.appId,
             'full_name': _name.text.trim(),
             'role': _isMukhtar ? 'mukhtar' : 'villager',
             'village_name': _village.text.trim(),
