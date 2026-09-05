@@ -5,6 +5,7 @@ import '../../models/announcement.dart';
 import '../../models/app_user.dart';
 import '../../models/village_request.dart';
 import '../../services/muhtarim_service.dart';
+import 'work_posts_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -79,6 +80,7 @@ class _DashboardState extends State<_Dashboard> {
   Widget build(BuildContext context) {
     final pages = [
       _AnnouncementsPage(user: widget.user, service: widget.service),
+      WorkPostsPage(user: widget.user, service: widget.service),
       _RequestsPage(user: widget.user, service: widget.service),
       if (widget.user.isMukhtar)
         _MembersPage(user: widget.user, service: widget.service),
@@ -89,6 +91,11 @@ class _DashboardState extends State<_Dashboard> {
         icon: Icon(Icons.campaign_outlined),
         selectedIcon: Icon(Icons.campaign),
         label: 'Duyurular',
+      ),
+      const NavigationDestination(
+        icon: Icon(Icons.construction_outlined),
+        selectedIcon: Icon(Icons.construction),
+        label: 'Çalışmalar',
       ),
       const NavigationDestination(
         icon: Icon(Icons.assignment_outlined),
@@ -115,7 +122,11 @@ class _DashboardState extends State<_Dashboard> {
           children: [
             Text(widget.user.villageName),
             Text(
-              widget.user.isMukhtar ? 'Muhtar paneli' : 'Köy meydanı',
+              [
+                if (widget.user.villageLocation.isNotEmpty)
+                  widget.user.villageLocation,
+                widget.user.isMukhtar ? 'Muhtar paneli' : 'Köy meydanı',
+              ].join(' • '),
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ],

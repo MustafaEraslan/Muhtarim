@@ -9,6 +9,8 @@ Muhtar ile köy halkını tek bir dijital köy meydanında buluşturan Flutter u
 - Köy sakinleri su, yol, elektrik, temizlik ve diğer kategorilerde talep açar.
 - Muhtar köydeki bütün talepleri görür; `Yeni`, `İşlemde`, `Çözüldü` olarak günceller.
 - Muhtar düğün, hayır, çalışma, acil ve genel duyuru yayınlar.
+- Muhtar köyde yapılan çalışmaları kamera veya galeriden fotoğraf ekleyerek paylaşır.
+- Köylüler çalışma postlarını fotoğraf, açıklama, konum ve tarih bilgisiyle görür.
 - Muhtar köye katılan üyeleri listeler.
 - Supabase RLS politikaları her köyün verisini diğer köylerden ayırır.
 
@@ -17,6 +19,7 @@ Muhtar ile köy halkını tek bir dijital köy meydanında buluşturan Flutter u
 1. Supabase Dashboard'da boş bir proje oluşturun.
 2. SQL Editor'ü açıp `supabase/migrations/0001_initial_schema.sql` dosyasının tamamını çalıştırın.
    Ardından `0002_multi_app_architecture.sql` migration'ını çalıştırın.
+   Son olarak `0003_work_posts.sql` migration'ını çalıştırın.
 3. Project Settings > API bölümündeki Project URL ve `anon` public key değerlerini alın.
 4. Uygulamayı aşağıdaki gibi başlatın:
 
@@ -75,3 +78,9 @@ flutter test
 - Telefon numarasıyla giriş ve yaşlı kullanıcılar için daha büyük yazı modu
 - Duyuru zamanlama, anket ve aidat/bağış takibi
 - Muhtar hesabı için belgeyle doğrulama ve yönetici onayı
+
+## Demo görselleri
+
+`assets/demo` altındaki Kırklar Köyü çalışma görselleri yapay zekâ ile üretilmiş
+temsili demo içerikleridir; gerçek bir belediye veya muhtarlık çalışmasının kanıtı
+olarak kullanılmamalıdır. Canlı uygulamadaki demo postlarında `Demo` rozeti gösterilir.
